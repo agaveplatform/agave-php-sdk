@@ -1,6 +1,5 @@
 {
     "name": "agave-php-sdk",
-    "version": "0.2.0",
     "description": "Client SDK to the Agave Platform",
     "keywords": [
         "agave",
@@ -13,7 +12,7 @@
     "authors": [
         {
             "name": "Rion Dooley",
-            "homepage": "https://github.com/agaveplatform/php-sdk"
+            "homepage": "https://github.com/agaveplatform/agave-php-sdk"
         }
     ],
     "require": {

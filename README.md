@@ -20,7 +20,7 @@ To install the bindings via [Composer](http://getcomposer.org/), add the followi
   "repositories": [
     {
       "type": "git",
-      "url": "https://github.com/agaveplatform/php-sdk.git"
+      "url": "https://github.com/agaveplatform/agave-php-sdk.git"
     }
   ],
   "require": {
