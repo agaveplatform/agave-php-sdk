@@ -1,0 +1,14 @@
+{
+  "apiPackage" : "API",
+  "modelPackage": "Model",
+  "invokerPackage": "Agave\\Client",
+  "packagePath": "agave-php-sdk",
+  "srcBasePath": "src/Agave/Client",
+  "composerVendorName": "agaveplatform",
+  "gitUserId": "agaveplatform",
+  "gitRepoId": "php-sdk",
+  "composerProjectName": "agave-php-sdk",
+  "artifactVersion": "0.2.0",
+  "hideGenerationTimestamp": true,
+  "sortParamsByRequiredFlag": true
+}
