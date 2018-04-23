@@ -1,6 +1,7 @@
 {
-    "name": "agave-php-sdk",
+    "name": "agaveplatform/agave-php-sdk",
     "description": "Client SDK to the Agave Platform",
+    "type": "package",
     "keywords": [
         "agave",
         "php",
