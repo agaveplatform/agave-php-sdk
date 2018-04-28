@@ -14,8 +14,9 @@
 
     <filter>
         <whitelist processUncoveredFilesFromWhitelist="true">
-            <directory suffix=".php">./lib/API</directory>
-            <directory suffix=".php">./lib/Model</directory>
+            <directory suffix=".php">./src/Agave/Client/API</directory>
+            <directory suffix=".php">./src/Agave/Client/Model</directory>
+            <directory suffix=".php">./src/Agave/Client/Util</directory>
         </whitelist>
     </filter>
 </phpunit>

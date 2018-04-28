@@ -28,6 +28,8 @@
  */
 
 namespace Agave\Client;
+use Agave\Client\Model\Client;
+use Agave\Client\Model\ClientSubscriptionTier;
 
 /**
  * ClientTest Class Doc Comment
@@ -41,80 +43,258 @@ namespace Agave\Client;
 class ClientTest extends \PHPUnit_Framework_TestCase
 {
 
-    /**
-     * Setup before running any test case
-     */
-    public static function setUpBeforeClass()
-    {
-    }
-
-    /**
-     * Setup before running each test case
-     */
-    public function setUp()
-    {
-    }
-
-    /**
-     * Clean up after running each test case
-     */
-    public function tearDown()
-    {
-    }
-
-    /**
-     * Clean up after running all test cases
-     */
-    public static function tearDownAfterClass()
-    {
-    }
+    const DEFAULT_CLIENT_KEY_VALUE = "clientKeyValue";
+    const DEFAULT_CLIENT_SECRET_VALUE = "clientSecretValue";
+    const DEFAULT_CLIENT_NAME_VALUE = "clientNameValue";
+    const DEFAULT_CLIENT_CALLBACK_URL_VALUE = "http://localhost/callbackurl";
+    const DEFAULT_CLIENT_DESCRIPTION_VALUE = "Some default value";
 
     /**
      * Test "Client"
      */
     public function testClient()
     {
+        $client = new Client($this->_getDefaultClientData());
+
+        $this->assertEquals($client->getKey(), self::DEFAULT_CLIENT_KEY_VALUE);
+        $this->assertEquals($client->getSecret(), self::DEFAULT_CLIENT_SECRET_VALUE);
+        $this->assertEquals($client->getTier(), ClientSubscriptionTier::SILVER);
+        $this->assertEquals($client->getName(), self::DEFAULT_CLIENT_NAME_VALUE);
+        $this->assertEquals($client->getDescription(), self::DEFAULT_CLIENT_DESCRIPTION_VALUE);
+    }
+
+
+    /**
+     * Data provider for client key tests
+     * @return array
+     */
+    public function testPropertyKeyDataProvider()
+    {
+        $testData = [];
+
+        $testModelKeys = ['key', 'consumerKey', 'apikey', 'apiKey',];
+
+        foreach ($testModelKeys as $testModelKey) {
+            $testData[] = [$testModelKey, self::DEFAULT_CLIENT_KEY_VALUE . $testModelKey];
+        }
+
+        return $testData;
     }
 
     /**
      * Test attribute "key"
+     *
+     * @param $propertyName
+     * @param $expectedValue
+     *
+     * @dataProvider testPropertyKeyDataProvider
      */
-    public function testPropertyKey()
+    public function testPropertyKey($propertyName, $expectedValue)
     {
+        $this->_doPropertyTest('key', $propertyName, $expectedValue, $expectedValue);
+    }
+
+
+    /**
+     * Data provider for client secret tests
+     * @return array
+     */
+    public function testPropertySecretDataProvider()
+    {
+        $testData = [];
+
+        $testModelKeys = ['secret', 'consumerSecret', 'apisecret', 'apiSecret',];
+
+        foreach ($testModelKeys as $testModelKey) {
+            $testData[] = [$testModelKey, self::DEFAULT_CLIENT_KEY_VALUE . $testModelKey];
+        }
+
+        return $testData;
     }
 
     /**
      * Test attribute "secret"
+     * @dataProvider testPropertySecretDataProvider
      */
-    public function testPropertySecret()
+    public function testPropertySecret($propertyName, $expectedValue)
     {
+        $this->_doPropertyTest('secret', $propertyName, $expectedValue, $expectedValue);
+    }
+
+    /**
+     * Data provider for client callbackUrl tests
+     * @return array
+     */
+    public function testPropertyCallbackUrlDataProvider()
+    {
+        $testData = [];
+
+        $testModelKeys = ['callbackUrl', 'callback_url', 'callbackurl',];
+
+        foreach ($testModelKeys as $testModelKey) {
+            $testData[] = [$testModelKey, self::DEFAULT_CLIENT_CALLBACK_URL_VALUE . $testModelKey];
+        }
+
+        return $testData;
     }
 
     /**
      * Test attribute "callback_url"
+     * @param $propertyName
+     * @param $expectedValue
+     *
+     * @dataProvider testPropertyCallbackUrlDataProvider
      */
-    public function testPropertyCallbackUrl()
+    public function testPropertyCallbackUrl($propertyName, $expectedValue)
     {
+        $this->_doPropertyTest('callbackUrl', $propertyName, $expectedValue, $expectedValue);
+    }
+
+    /**
+     * Data provider for client description tests
+     * @return array
+     */
+    public function testPropertyDescriptionDataProvider()
+    {
+        $testData = [];
+
+        $testModelKeys = ['description',];
+
+        foreach ($testModelKeys as $testModelKey) {
+            $testData[] = [$testModelKey, self::DEFAULT_CLIENT_DESCRIPTION_VALUE . $testModelKey];
+        }
+
+        return $testData;
     }
 
     /**
      * Test attribute "description"
+     * @param $propertyName
+     * @param $expectedValue
+     *
+     * @dataProvider testPropertyDescriptionDataProvider
      */
-    public function testPropertyDescription()
+    public function testPropertyDescription($propertyName, $expectedValue)
     {
+        $this->_doPropertyTest('description', $propertyName, $expectedValue, $expectedValue);
+    }
+
+    /**
+     * Data provider for client name tests
+     * @return array
+     */
+    public function testPropertyNameDataProvider()
+    {
+        $testData = [];
+
+        $testModelKeys = ['name','clientName','client_name',];
+
+        foreach ($testModelKeys as $testModelKey) {
+            $testData[] = [$testModelKey, self::DEFAULT_CLIENT_NAME_VALUE . $testModelKey];
+        }
+
+        return $testData;
     }
 
     /**
      * Test attribute "name"
+     * @param $propertyName
+     * @param $expectedValue
+     *
+     * @dataProvider testPropertyNameDataProvider
      */
-    public function testPropertyName()
+    public function testPropertyName($propertyName, $expectedValue)
     {
+        $this->_doPropertyTest('name', $propertyName, $expectedValue, $expectedValue);
+    }
+
+    /**
+     * Data provider for client tier tests
+     * @return array
+     */
+    public function testPropertyTierDataProvider()
+    {
+        $testData = [];
+
+        $testModelKeys = ClientSubscriptionTier::getAllowableEnumValues();
+
+        foreach ($testModelKeys as $testModelKey) {
+            $testData[] = ['tier', $testModelKey, $testModelKey];
+
+        }
+
+        $testData[] = ['tier', null, null];
+
+        return $testData;
     }
 
     /**
      * Test attribute "tier"
+     * * @param $propertyName
+     * @param $expectedValue
+     *
+     * @dataProvider testPropertyTierDataProvider
      */
-    public function testPropertyTier()
+    public function testPropertyTier($propertyName, $testValue, $expectedValue)
     {
+        $this->_doPropertyTest('tier', $propertyName, $testValue, $expectedValue);
     }
+
+
+    /**
+     * Populates an array with default values for a Client object initialization
+     * @return array
+     */
+    private function _getDefaultClientData()
+    {
+        return [
+            'key' => self::DEFAULT_CLIENT_KEY_VALUE,
+            'secret' => self::DEFAULT_CLIENT_SECRET_VALUE,
+            'tier' => ClientSubscriptionTier::SILVER,
+            'callbackUrl' => self::DEFAULT_CLIENT_CALLBACK_URL_VALUE,
+            'name' => self::DEFAULT_CLIENT_NAME_VALUE,
+            'description' => self::DEFAULT_CLIENT_DESCRIPTION_VALUE,
+        ];
+    }
+
+    /**
+     * Generic test executor for property assignment tests in the constructor.
+     *
+     * @param $propertyToBeTested the original namee of the property to be testfed
+     * @param $propertyName the alternate property name to test assignment
+     * @param $testValue the value to assign to the $propertyName key
+     * @param $expectedValue the expected value of $propertyTOBeTested after assignment
+     */
+    private function _doPropertyTest($propertyToBeTested, $propertyName, $testValue, $expectedValue)
+    {
+        $testClientData = $this->_getDefaultClientData();
+        unset($testClientData[$propertyToBeTested]);
+        $testClientData[$propertyName] = $testValue;
+
+        $client = new Client($testClientData);
+
+        $getterName = $client::getters()[$propertyToBeTested];
+
+        $this->assertEquals($expectedValue, $client->$getterName(),
+            "Client {$propertyToBeTested} should be set when using the {$propertyName} key in the constructor.");
+
+        $expectedClientData = $this->_getDefaultClientData();
+        $expectedClientData[$propertyToBeTested] = $expectedValue;
+
+        $seralizedClient = $client->__toString();
+
+        if ($propertyName !== $propertyToBeTested) {
+            $this->assertArrayNotHasKey($propertyName, json_decode($seralizedClient, true),
+                "Serialized client should not have {$propertyName} as a field.");
+        }
+
+        $this->assertArraySubset($expectedClientData,
+            json_decode($seralizedClient, true),
+            false,
+            "Serialized client data should maintain the same values as the client getters \n" .
+            print_r($expectedClientData, true) .
+            "\n vs. \n" .
+            $seralizedClient);
+    }
+
 }

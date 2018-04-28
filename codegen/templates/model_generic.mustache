@@ -415,4 +415,15 @@ class {{classname}} {{#parentSchema}}extends {{{parent}}} {{/parentSchema}}{{^pa
 
         return json_encode(ObjectSerializer::sanitizeForSerialization($this));
     }
+
+    /**
+     * Gets the array presentation of the object by returning the
+     * container data holding the raw local keys and values
+     *
+     * @return string
+     */
+    public function toArray()
+    {
+        return $this->container;
+    }
 }

@@ -28,6 +28,19 @@
 
 namespace Agave\Client;
 
+use Agave\Client\API\ClientsApi;
+use Agave\Client\API\TokensApi;
+use Agave\Client\Model\Client;
+use Agave\Client\Model\ClientRequest;
+use Agave\Client\Model\ClientSubscriptionTier;
+use Agave\Client\Model\RefreshToken;
+use Agave\Client\Model\SingleClientResponse;
+use Agave\Client\Model\Token;
+use Agave\Client\Traits\StaticCalling;
+use Agave\Client\Util\AuthCacheUtil;
+use Closure;
+
+
 /**
  * Configuration Class Doc Comment
  * PHP version 5
@@ -39,56 +52,78 @@ namespace Agave\Client;
  */
 class Configuration
 {
+    use StaticCalling;
+
     private static $defaultConfiguration;
+
+    protected static $ENVIRONMENT_VARIABLE_NAMES = [
+        'AGAVE_BASE_URL',
+        'AGAVE_DEV_URL',
+        'AGAVE_TENANT',
+        'AGAVE_ACCESS_TOKEN',
+        'AGAVE_REFRESH_TOKEN',
+        'AGAVE_CLIENT_KEY',
+        'AGAVE_CLIENT_SECRET',
+        'AGAVE_CLIENT_NAME',
+        'AGAVE_USERNAME',
+        'AGAVE_PASSWORD',
+    ];
 
     /**
      * Associate array to store API key(s)
      *
      * @var string[]
      */
-    protected $apiKeys = [];
+    protected $ApiKeys = [];
 
     /**
      * Associate array to store API prefix (e.g. Bearer)
      *
      * @var string[]
      */
-    protected $apiKeyPrefixes = [];
+    protected $ApiKeyPrefixes = [];
 
-    /**
-     * Access token for OAuth
-     *
-     * @var string
-     */
-    protected $accessToken = '';
-
-    /**
-     * Username for HTTP basic authentication
-     *
-     * @var string
-     */
-    protected $username = '';
-
+//    /**
+//     * Access token for OAuth
+//     *
+//     * @var string
+//     */
+//    protected $accessToken = '';
+//
+//    /**
+//     * Refresh token for OAuth
+//     *
+//     * @var string
+//     */
+//    protected $refreshToken = '';
+//
+//    /**
+//     * Username for HTTP basic authentication
+//     *
+//     * @var string
+//     */
+//    protected $username = '';
+//
     /**
      * Password for HTTP basic authentication
      *
      * @var string
      */
     protected $password = '';
-
-    /**
-     * The host
-     *
-     * @var string
-     */
-    protected $host = 'https://public.agaveapi.co';
+//
+//    /**
+//     * The host
+//     *
+//     * @var string
+//     */
+//    protected $host = 'https://public.agaveapi.co';
 
     /**
      * User agent of the HTTP request, set to "PHP-Swagger" by default
      *
      * @var string
      */
-    protected $userAgent = 'Swagger-Codegen/0.2.0/php';
+    protected $userAgent = 'Agave Client SDK/0.2.0/php';
 
     /**
      * Debug switch (default set to false)
@@ -112,63 +147,72 @@ class Configuration
     protected $tempFolderPath;
 
     /**
+     * The auth cache containing client and token info used consistently across
+     * all Agave SDK.
+     *
+     * @var AuthCacheUtil
+     */
+    protected $authCache;
+
+    /**
      * Constructor
      */
     public function __construct()
     {
         $this->tempFolderPath = sys_get_temp_dir();
+        $this->authCache = new AuthCacheUtil();
     }
 
     /**
      * Sets API key
      *
-     * @param string $apiKeyIdentifier API key identifier (authentication scheme)
+     * @param string $ApiKeyIdentifier API key identifier (authentication scheme)
      * @param string $key              API key or token
      *
      * @return $this
      */
-    public function setApiKey($apiKeyIdentifier, $key)
+    public function setApiKey($ApiKeyIdentifier, $key)
     {
-        $this->apiKeys[$apiKeyIdentifier] = $key;
+        $this->ApiKeys[$ApiKeyIdentifier] = $key;
         return $this;
     }
 
     /**
      * Gets API key
      *
-     * @param string $apiKeyIdentifier API key identifier (authentication scheme)
+     * @param string $ApiKeyIdentifier API key identifier (authentication scheme)
      *
      * @return string API key or token
      */
-    public function getApiKey($apiKeyIdentifier)
+    public function getApiKey($ApiKeyIdentifier)
     {
-        return isset($this->apiKeys[$apiKeyIdentifier]) ? $this->apiKeys[$apiKeyIdentifier] : null;
+        return isset($this->ApiKeys[$ApiKeyIdentifier]) ? $this->ApiKeys[$ApiKeyIdentifier] : null;
     }
 
     /**
      * Sets the prefix for API key (e.g. Bearer)
      *
-     * @param string $apiKeyIdentifier API key identifier (authentication scheme)
+     * @param string $ApiKeyIdentifier API key identifier (authentication scheme)
      * @param string $prefix           API key prefix, e.g. Bearer
      *
      * @return $this
      */
-    public function setApiKeyPrefix($apiKeyIdentifier, $prefix)
+    public function setApiKeyPrefix($ApiKeyIdentifier, $prefix)
     {
-        $this->apiKeyPrefixes[$apiKeyIdentifier] = $prefix;
+        $this->ApiKeyPrefixes[$ApiKeyIdentifier] = $prefix;
         return $this;
     }
 
     /**
      * Gets API key prefix
      *
-     * @param string $apiKeyIdentifier API key identifier (authentication scheme)
+     * @param string $ApiKeyIdentifier API key identifier (authentication scheme)
      *
      * @return string
      */
-    public function getApiKeyPrefix($apiKeyIdentifier)
+    public function getApiKeyPrefix($ApiKeyIdentifier)
     {
-        return isset($this->apiKeyPrefixes[$apiKeyIdentifier]) ? $this->apiKeyPrefixes[$apiKeyIdentifier] : null;
+        return isset($this->ApiKeyPrefixes[$ApiKeyIdentifier]) ? $this->ApiKeyPrefixes[$ApiKeyIdentifier] : null;
     }
 
     /**
@@ -180,7 +224,7 @@ class Configuration
      */
     public function setAccessToken($accessToken)
     {
-        $this->accessToken = $accessToken;
+        $this->getAuthCache()->setAccessToken($accessToken);
         return $this;
     }
 
@@ -191,7 +235,7 @@ class Configuration
      */
     public function getAccessToken()
     {
-        return $this->accessToken;
+        return $this->getAuthCache()->getAccessToken();
     }
 
     /**
@@ -203,7 +247,8 @@ class Configuration
      */
     public function setUsername($username)
     {
-        $this->username = $username;
+//        $this->username = $username;
+        $this->getAuthCache()->setUsername($username);
         return $this;
     }
 
@@ -214,7 +259,8 @@ class Configuration
      */
     public function getUsername()
     {
-        return $this->username;
+        return $this->getAuthCache()->getUsername();
+//        return $this->username;
     }
 
     /**
@@ -249,7 +295,8 @@ class Configuration
      */
     public function setHost($host)
     {
-        $this->host = $host;
+//        $this->host = $host;
+        $this->getAuthCache()->setBaseUrl($host);
         return $this;
     }
 
@@ -260,7 +307,118 @@ class Configuration
      */
     public function getHost()
     {
-        return $this->host;
+        return $this->getAuthCache()->getBaseUrl();
+//        return $this->host;
+    }
+
+    /**
+     * @return string
+     */
+    public function getRefreshToken()
+    {
+        return $this->getAuthCache()->getRefreshToken();
+    }
+
+    /**
+     * @param string $refreshToken
+     * @return $this
+     */
+    public function setRefreshToken($refreshToken)
+    {
+        $this->getAuthCache()->setRefreshToken($refreshToken);
+        return $this;
+    }
+
+
+    /**
+     * @return string
+     */
+    public function getClientName()
+    {
+        return $this->getAuthCache()->getClientName();
+    }
+
+    /**
+     * @param string $clientName
+     * @return $this
+     */
+    public function setClientName($clientName)
+    {
+        $this->getAuthCache()->setClientName($clientName);
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getClientKey()
+    {
+        return $this->getAuthCache()->getApiKey();
+    }
+
+    /**
+     * @param string $clientKey
+     * @return $this
+     */
+    public function setClientKey($clientKey)
+    {
+        $this->getAuthCache()->setApiKey($clientKey);
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getClientSecret()
+    {
+        return $this->getAuthCache()->getApiSecret();
+    }
+
+    /**
+     * @param string $clientSecret
+     * @return $this
+     */
+    public function setClientSecret($clientSecret)
+    {
+        $this->getAuthCache()->setApiSecret($clientSecret);
+        return $this;
+    }
+
+    /**
+     * @return AuthCacheUtil
+     */
+    public function getAuthCache()
+    {
+        return $this->authCache;
+    }
+
+    /**
+     * @param AuthCacheUtil $authCache
+     * @return $this
+     */
+    public function setAuthCache($authCache)
+    {
+        $this->authCache = $authCache;
+        return $this;
+    }
+
+
+    /**
+     * @return string directory where auth cache file is stored
+     */
+    public function getAuthCacheDir()
+    {
+        return $this->getAuthCache()->getAuthCacheDir();
+    }
+
+    /**
+     * @param string $authCacheDir
+     * @return $this
+     */
+    public function setAuthCacheDir($authCacheDir)
+    {
+        $this->getAuthCache()->setAuthCacheDir($authCacheDir);
+        return $this;
     }
 
     /**
@@ -364,11 +522,27 @@ class Configuration
      * Gets the default configuration instance
      *
      * @return Configuration
+     * @throws OAuthException
      */
     public static function getDefaultConfiguration()
     {
         if (self::$defaultConfiguration === null) {
             self::$defaultConfiguration = new Configuration();
+            self::$defaultConfiguration->restore();
+            try {
+                self::$defaultConfiguration->refresh();
+            }
+            catch (ApiException $e) {
+                if (self::$defaultConfiguration->getDebug()) {
+                    file_put_contents(self::$defaultConfiguration->getDebugFile(),
+                        sprintf(
+                        "[%s] DEBUG - %s\n%s",
+                        ('Y-m-d i:m:s'),
+                        'Failed to refresh the default access token.',
+                        $e->getTraceAsString()));
+                }
+//                throw $e;
+            }
         }
 
         return self::$defaultConfiguration;
@@ -390,15 +564,34 @@ class Configuration
      * Gets the essential information for debugging
      *
      * @return string The report for debugging
+     * @throws OAuthException
      */
     public static function toDebugReport()
     {
-        $report  = 'PHP SDK (Agave\Client) Debug Report:' . PHP_EOL;
+        $report  = 'Agave Platform PHP SDK Debug Report:' . PHP_EOL;
         $report .= '    OS: ' . php_uname() . PHP_EOL;
         $report .= '    PHP Version: ' . PHP_VERSION . PHP_EOL;
         $report .= '    OpenAPI Spec Version: 2.2.14' . PHP_EOL;
         $report .= '    SDK Package Version: 0.2.0' . PHP_EOL;
         $report .= '    Temp Folder Path: ' . self::getDefaultConfiguration()->getTempFolderPath() . PHP_EOL;
+
+        $report .= '    Environment:';
+        foreach (getenv() as $varName => $varVal) {
+            $report .= "        {$varName} = {$varVal}" . PHP_EOL;;
+        }
+
+        $report .= '    Auth Cache:' . PHP_EOL;
+        $report .= '        Directory: '. self::getDefaultConfiguration()->getAuthCache()->getAuthCacheDir(). PHP_EOL;
+        $report .= '        File: '. self::getDefaultConfiguration()->getAuthCache()->getAuthCacheDir() . "current" . PHP_EOL;
+
+        if (self::getDefaultConfiguration()->getAuthCache()) {
+             $report .= '        Contents: ' . PHP_EOL;
+
+            $authCacheData = json_decode(self::getDefaultConfiguration()->getAuthCache()->__toString(), true);
+            foreach ($authCacheData as $varName => $varVal) {
+                $report .= "            {$varName} = {$varVal}" . PHP_EOL;;
+            }
+        }
 
         return $report;
     }
@@ -406,25 +599,313 @@ class Configuration
     /**
      * Get API key (with prefix if set)
      *
-     * @param  string $apiKeyIdentifier name of apikey
+     * @param  string $ApiKeyIdentifier name of ApiKey
      *
      * @return string API key with the prefix
      */
-    public function getApiKeyWithPrefix($apiKeyIdentifier)
+    public function getApiKeyWithPrefix($ApiKeyIdentifier)
     {
-        $prefix = $this->getApiKeyPrefix($apiKeyIdentifier);
-        $apiKey = $this->getApiKey($apiKeyIdentifier);
+        $prefix = $this->getApiKeyPrefix($ApiKeyIdentifier);
+        $ApiKey = $this->getApiKey($ApiKeyIdentifier);
 
-        if ($apiKey === null) {
+        if ($ApiKey === null) {
             return null;
         }
 
         if ($prefix === null) {
-            $keyWithPrefix = $apiKey;
+            $keyWithPrefix = $ApiKey;
         } else {
-            $keyWithPrefix = $prefix . ' ' . $apiKey;
+            $keyWithPrefix = $prefix . ' ' . $ApiKey;
         }
 
         return $keyWithPrefix;
     }
+
+    /**
+     * Restores a configuration based on the values found in the auth config file found within the $agaveCacheDirectory
+     * of the
+     * @param string $agaveCacheDirectory the path to the directory containing the auth config file on disk.
+     * @return $this
+     */
+    public function restore($agaveCacheDirectory = null) {
+
+        $agaveCacheDirectory = $agaveCacheDirectory ?: $this->getAuthCacheDir();
+
+        /** @var AuthCacheUtil $authCache */
+        $this->authCache = $this->callStatic(AuthCacheUtil::class, 'readFromFile', $agaveCacheDirectory);
+
+        $this->restoreFromEnvironment();
+
+        return $this;
+    }
+
+    /**
+     * Reads in all Agave environment variables and merges them with the current Configuration object.
+     * This is read every time the #restore($cacheDirectory) method is called to allow for environment
+     * configurations to take preference over the default auth config file.
+     */
+    public function restoreFromEnvironment() {
+        $this->setPassword(self::env("AGAVE_PASSWORD"));
+
+        // override the disk auth config with environment variables
+        $this->getAuthCache()->setBaseUrl(self::env('AGAVE_BASE_URL', $this->getAuthCache()->getBaseUrl()));
+        $this->getAuthCache()->setDevUrl(self::env('AGAVE_DEV_URL', $this->getAuthCache()->getDevUrl()));
+        $this->getAuthCache()->setUsername(self::env('AGAVE_USERNAME', $this->getAuthCache()->getUsername()));
+        $this->getAuthCache()->setClientName(self::env('AGAVE_CLIENT_NAME', $this->getAuthCache()->getClientName()));
+        $this->getAuthCache()->setApiKey(self::env('AGAVE_CLIENT_KEY', $this->getAuthCache()->getApiKey()));
+        $this->getAuthCache()->setApiSecret(self::env('AGAVE_CLIENT_SECRET', $this->getAuthCache()->getApiSecret()));
+        $this->getAuthCache()->setTenantId(self::env('AGAVE_TENANT', $this->getAuthCache()->getTenantId()));
+        $this->getAuthCache()->setAccessToken(self::env('AGAVE_ACCESS_TOKEN', $this->getAuthCache()->getAccessToken()));
+        $this->getAuthCache()->setRefreshToken(self::env('AGAVE_REFRESH_TOKEN', $this->getAuthCache()->getRefreshToken()));
+    }
+
+    /**
+     * Refreshes the current access token when a valid refresh token is present in this Configuration.
+     * If no refresh token or client api keys are present, the method
+     *
+     * @return boolean true if the operation was peformed, false otherwise
+     *
+     * @throws ApiException
+     * @throws OAuthException
+     */
+    public function refresh() {
+        if ($this->getRefreshToken() == null) {
+            throw new OAuthException("No refresh token provided. A valid refresh token is required to refresh ".
+                "an existing access token.");
+        }
+        else if ($this->getAuthCache()->getApiKey() == null) {
+            throw new OAuthException("No client key provided. The client key originally used to obtain the access ".
+                "and refresh tokens is required to refresh them.");
+        }
+        else if ($this->getAuthCache()->getApiSecret() == null) {
+            throw new OAuthException("No client secret provided. The client secret originally used to obtain the access ".
+                "and refresh tokens is required to refresh them.");
+        }
+        else {
+
+            /** @var TokensApi $tokensApi */
+            $tokensApi = $this->getTokensApi();
+            /** @var RefreshToken $refreshToken */
+            $refreshToken = $tokensApi->refresh($this->getRefreshToken());
+
+            $ts = strtotime('now');
+            $this->setAccessToken($refreshToken->getAccessToken());
+            $this->setRefreshToken($this->getAuthCache()->getRefreshToken());
+            $this->getAuthCache()->setCreatedAt(date('Y-m-d H:i:s', strtotime('now') - (14400 - $refreshToken->getExpiresIn())));
+            $this->getAuthCache()->setExpiresAt(date('Y-m-d H:i:s', $ts + $refreshToken->getExpiresIn()));
+
+            return true;
+        }
+    }
+
+    /**
+     * Fetches a new access token from the Agave Platform using the username and password
+     * in this Configuration.
+     *
+     * @throws ApiException
+     */
+    public function authenticate() {
+
+        /** @var Token $token */
+        $token = $this->getTokensApi()->create($this->getUsername(), $this->getPassword());
+
+        $this->setToken($token);
+    }
+
+    /**
+     * Bootstraps a new config from scratch by creating a new client, fetching a valid auth token,
+     * and initializing a new Configuration with the results. If a client by the given
+     *
+     * @param string $clientName
+     * @param string $callbackUrl
+     * @param string $description
+     * @return Configuration
+     * @throws ApiException
+     * @throws OAuthException
+     */
+    public static function bootstrap($clientName = null, $callbackUrl = null, $description = null) {
+
+        $configuration = self::getDefaultConfiguration();
+
+        /** @var ClientsApi $clientsApi */
+        $clientsApi = $configuration->getClientsApi();
+
+        if (empty($clientName)) {
+            if (empty($configuration->getAuthCache()->getClientName())) {
+                $clientName = $configuration->getAuthCache()->getClientName();
+            } else {
+                $clientName = $configuration->getAuthCache()->getUsername() . "_php_cli";
+            }
+        }
+
+        try {
+            /** @var SingleClientResponse $clientDetails */
+            $clientResponse = $clientsApi->getClient($clientsApi);
+
+            // if the client exists, we need to delete it since we don't have the api keys
+            if (!empty($clientResponse->getResult())) {
+                $clientsApi->deleteClient($clientName);
+            }
+        }
+        catch (ApiException $e) {
+            // if we get a 404, the client does not exist.
+            if ($e->getCode() !== 404) {
+                throw $e;
+            }
+        }
+
+        $clientRequest = new ClientRequest();
+        $clientRequest->setName($clientName);
+        $clientRequest->setDescription($description);
+        $clientRequest->setCallbackUrl($callbackUrl);
+        $clientRequest->setTier(ClientSubscriptionTier::UNLIMITED);
+
+
+        try {
+            $clientResponse = $clientsApi->addClient($clientRequest);
+
+            $configuration->setClient($clientResponse->getResult());
+
+        }
+        catch (ApiException $e) {
+            throw $e;
+        }
+
+        $configuration->authenticate();
+
+        return $configuration;
+    }
+
+
+    /**
+     * Saves the current AuthCacheUtil config to disk in the cache directory assigned on startup
+     *
+     * @return boolean true if the file was written, false otherwise
+     * @see AuthCacheUtil#write()
+     */
+    public function store() {
+        if ($this->getAuthCache()) {
+            return $this->getAuthCache()->write();
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
+     * Returns the environment variable names used by the SDK
+     * @return array
+     */
+    public static function getEnvironmentVariableNames() {
+        return self::$ENVIRONMENT_VARIABLE_NAMES;
+    }
+
+    /**
+     * Determine if a given string ends with a given substring.
+     *
+     * @param  string  $haystack
+     * @param  string|array  $needles
+     * @return bool
+     */
+    public static function endsWith($haystack, $needles)
+    {
+        foreach ((array) $needles as $needle) {
+            if (substr($haystack, -strlen($needle)) === (string) $needle) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Gets the value of an environment variable.
+     *
+     * @param  string  $key
+     * @param  mixed   $default
+     * @return mixed
+     */
+    public static function env($key, $default = null)
+    {
+        $value = getenv($key);
+
+        if ($value === false) {
+            return self::value($default);
+        }
+
+        switch (strtolower($value)) {
+            case 'true':
+            case '(true)':
+                return true;
+            case 'false':
+            case '(false)':
+                return false;
+            case 'empty':
+            case '(empty)':
+                return '';
+            case 'null':
+            case '(null)':
+                return null;
+        }
+
+        if (($valueLength = strlen($value)) > 1 && $value[0] === '"' && $value[$valueLength - 1] === '"') {
+            return substr($value, 1, -1);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Return the default value of the given value.
+     *
+     * @param  mixed  $value
+     * @return mixed
+     */
+    public static function value($value)
+    {
+        return $value instanceof Closure ? $value() : $value;
+    }
+
+    /**
+     * Updates the configuration and auth cache with the given Client's details.
+     * @param Client $client
+     * @return $this
+     */
+    public function setClient($client)
+    {
+        $this->getAuthCache()->setClientName($client->getName());
+        $this->getAuthCache()->setApiKey($client->getKey());
+        $this->getAuthCache()->setApiSecret($client->getSecret());
+
+        return $this;
+    }
+
+    /**
+     * Updates the configuration and auth cache with the given Client's details.
+     * @param Token $token
+     * @return $this
+     */
+    public function setToken($token) {
+        $this->getAuthCache()->setAccessToken($token->getAccessToken());
+        $this->getAuthCache()->setRefreshToken($this->getRefreshToken());
+        $this->getAuthCache()->setCreatedAt($token->getCreatedAt());
+        $this->getAuthCache()->setExpiresAt($token->getExpiresAt());
+        $now = strtotime('now');
+        $expirationTime = strtotime($token->getExpiresAt());
+        $expiresIn = max(($expirationTime - $now), 0);
+        $this->getAuthCache()->setExpiresIn($expiresIn);
+
+        return $this;
+    }
+
+    protected function getTokensApi()
+    {
+        return new TokensApi($this);
+    }
+
+    protected function getClientsApi()
+    {
+        return new ClientsApi($this);
+    }
+
 }

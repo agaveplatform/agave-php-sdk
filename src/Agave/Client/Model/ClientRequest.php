@@ -192,10 +192,20 @@ class ClientRequest implements ModelInterface, ArrayAccess
      */
     public function __construct(array $data = null)
     {
-        $this->container['name'] = isset($data['name']) ? $data['name'] : null;
-        $this->container['description'] = isset($data['description']) ? $data['description'] : null;
+        $this->container['callbackUrl'] = isset($data['callback_url']) ?
+            $data['callback_url'] : isset($data['callbackUrl']) ?
+                $data['callbackUrl'] : isset($data['callbackurl']) ?
+                    $data['callbackurl'] : null;
+
+        $this->container['description'] = isset($data['description']) ?
+            $data['description'] : "Client application built with the Agave PHP SDK";
+
+        $this->container['name'] = isset($data['name']) ?
+            $data['name'] : isset($data['client_name']) ?
+                $data['client_name'] : isset($data['clientName']) ?
+                    $data['clientName'] : null;
+
         $this->container['tier'] = isset($data['tier']) ? $data['tier'] : null;
-        $this->container['callback_url'] = isset($data['callback_url']) ? $data['callback_url'] : null;
     }
 
     /**
@@ -216,8 +226,8 @@ class ClientRequest implements ModelInterface, ArrayAccess
         if ($this->container['tier'] === null) {
             $invalidProperties[] = "'tier' can't be null";
         }
-        if ($this->container['callback_url'] === null) {
-            $invalidProperties[] = "'callback_url' can't be null";
+        if ($this->container['callbackUrl'] === null) {
+            $invalidProperties[] = "'callbackUrl' can't be null";
         }
         return $invalidProperties;
     }
@@ -295,7 +305,7 @@ class ClientRequest implements ModelInterface, ArrayAccess
     /**
      * Sets tier
      *
-     * @param \Agave\Client\Model\ClientSubscriptionTier $tier tier
+     * @param string $tier tier
      *
      * @return $this
      */
@@ -307,25 +317,25 @@ class ClientRequest implements ModelInterface, ArrayAccess
     }
 
     /**
-     * Gets callback_url
+     * Gets callbackUrl
      *
      * @return string
      */
     public function getCallbackUrl()
     {
-        return $this->container['callback_url'];
+        return $this->container['callbackUrl'];
     }
 
     /**
-     * Sets callback_url
+     * Sets callbackUrl
      *
-     * @param string $callback_url Callback URL for OAuth authentication grant.
+     * @param string $callbackUrl Callback URL for OAuth authentication grant.
      *
      * @return $this
      */
-    public function setCallbackUrl($callback_url)
+    public function setCallbackUrl($callbackUrl)
     {
-        $this->container['callback_url'] = $callback_url;
+        $this->container['callbackUrl'] = $callbackUrl;
 
         return $this;
     }

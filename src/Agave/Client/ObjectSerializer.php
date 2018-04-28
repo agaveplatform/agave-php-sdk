@@ -75,6 +75,9 @@ class ObjectSerializer
                 if ($value !== null) {
                     $values[$data::attributeMap()[$property]] = self::sanitizeForSerialization($value, $swaggerType, $formats[$property]);
                 }
+                else {
+                    $values[$data::attributeMap()[$property]] = null;
+                }
             }
             return (object)$values;
         } else {

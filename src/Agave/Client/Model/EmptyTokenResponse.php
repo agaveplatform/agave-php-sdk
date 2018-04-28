@@ -1,6 +1,6 @@
 <?php
 /**
- * Client
+ * EmptyClientResponse
  *
  * PHP version 5
  *
@@ -33,14 +33,14 @@ use \ArrayAccess;
 use \Agave\Client\ObjectSerializer;
 
 /**
- * Client Class Doc Comment
+ * EmptyTokenResponse Class Doc Comment
  *
  * @category Class
  * @package  Agave\Client
  * @author   Swagger Codegen team
  * @link     https://github.com/swagger-api/swagger-codegen
  */
-class Client implements ModelInterface, ArrayAccess
+class EmptyTokenResponse implements ModelInterface, ArrayAccess
 {
     const DISCRIMINATOR = null;
 
@@ -49,7 +49,7 @@ class Client implements ModelInterface, ArrayAccess
       *
       * @var string
       */
-    protected static $swaggerModelName = 'Client';
+    protected static $swaggerModelName = 'EmptyTokenResponse';
 
     /**
       * Array of property to type mappings. Used for (de)serialization
@@ -57,12 +57,9 @@ class Client implements ModelInterface, ArrayAccess
       * @var string[]
       */
     protected static $swaggerTypes = [
-        'key' => 'string',
-        'secret' => 'string',
-        'callbackUrl' => 'string',
-        'description' => 'string',
-        'name' => 'string',
-        'tier' => null
+        'message' => 'string',
+        'result' => 'string',
+        'status' => 'string'
     ];
 
     /**
@@ -71,12 +68,9 @@ class Client implements ModelInterface, ArrayAccess
       * @var string[]
       */
     protected static $swaggerFormats = [
-        'key' => null,
-        'secret' => null,
-        'callbackUrl' => null,
-        'description' => null,
-        'name' => null,
-        'tier' => null
+        'message' => null,
+        'result' => null,
+        'status' => null
     ];
 
     /**
@@ -106,12 +100,9 @@ class Client implements ModelInterface, ArrayAccess
      * @var string[]
      */
     protected static $attributeMap = [
-        'key' => 'key',
-        'secret' => 'secret',
-        'callbackUrl' => 'callbackUrl',
-        'description' => 'description',
-        'name' => 'name',
-        'tier' => 'tier',
+        'message' => 'message',
+        'result' => 'result',
+        'status' => 'status'
     ];
 
     /**
@@ -120,12 +111,9 @@ class Client implements ModelInterface, ArrayAccess
      * @var string[]
      */
     protected static $setters = [
-        'key' => 'setKey',
-        'secret' => 'setSecret',
-        'callbackUrl' => 'setCallbackUrl',
-        'description' => 'setDescription',
-        'name' => 'setName',
-        'tier' => 'setTier',
+        'message' => 'setMessage',
+        'result' => 'setResult',
+        'status' => 'setStatus'
     ];
 
     /**
@@ -134,12 +122,9 @@ class Client implements ModelInterface, ArrayAccess
      * @var string[]
      */
     protected static $getters = [
-        'key' => 'getKey',
-        'secret' => 'getSecret',
-        'callbackUrl' => 'getCallbackUrl',
-        'description' => 'getDescription',
-        'name' => 'getName',
-        'tier' => 'getTier',
+        'message' => 'getMessage',
+        'result' => 'getResult',
+        'status' => 'getStatus'
     ];
 
     /**
@@ -183,6 +168,10 @@ class Client implements ModelInterface, ArrayAccess
         return self::$swaggerModelName;
     }
 
+    
+
+    
+
     /**
      * Associative array for storing property values
      *
@@ -198,32 +187,9 @@ class Client implements ModelInterface, ArrayAccess
      */
     public function __construct(array $data = null)
     {
-        $this->container['key'] = isset($data['key']) ?
-            $data['key'] : (isset($data['consumerKey']) ?
-                $data['consumerKey'] : (isset($data['apikey']) ?
-                    $data['apikey'] : (isset($data['apiKey']) ?
-                        $data['apiKey'] : null)));
-
-        $this->container['secret'] = isset($data['secret']) ?
-            $data['secret'] : (isset($data['consumerSecret']) ?
-                $data['consumerSecret'] : (isset($data['apisecret']) ?
-                    $data['apisecret'] : (isset($data['apiSecret']) ?
-                        $data['apiSecret'] : null)));
-
-        $this->container['callbackUrl'] = isset($data['callback_url']) ?
-            $data['callback_url'] : (isset($data['callbackUrl']) ?
-                $data['callbackUrl'] : (isset($data['callbackurl']) ?
-                    $data['callbackurl'] : null));
-
-        $this->container['description'] = isset($data['description']) ?
-            $data['description'] : "Client application built with the Agave PHP SDK";
-
-        $this->container['name'] = isset($data['name']) ?
-            $data['name'] : (isset($data['client_name']) ?
-                $data['client_name'] : (isset($data['clientName']) ?
-                    $data['clientName'] : null));
-
-        $this->container['tier'] = isset($data['tier']) ? $data['tier'] : null;
+        $this->container['message'] = isset($data['message']) ? $data['message'] : null;
+        $this->container['result'] = isset($data['result']) ? $data['result'] : null;
+        $this->container['status'] = isset($data['status']) ? $data['status'] : null;
     }
 
     /**
@@ -235,23 +201,14 @@ class Client implements ModelInterface, ArrayAccess
     {
         $invalidProperties = [];
 
-        if ($this->container['key'] === null) {
-            $invalidProperties[] = "'key' can't be null";
+        if ($this->container['message'] === null) {
+            $invalidProperties[] = "'message' can't be null";
         }
-        if ($this->container['secret'] === null) {
-            $invalidProperties[] = "'secret' can't be null";
+        if ($this->container['result'] === null) {
+            $invalidProperties[] = "'result' can't be null";
         }
-        if ($this->container['callbackUrl'] === null) {
-            $invalidProperties[] = "'callbackUrl' can't be null";
-        }
-        if ($this->container['description'] === null) {
-            $invalidProperties[] = "'description' can't be null";
-        }
-        if ($this->container['name'] === null) {
-            $invalidProperties[] = "'name' can't be null";
-        }
-        if ($this->container['tier'] === null) {
-            $invalidProperties[] = "'tier' can't be null";
+        if ($this->container['status'] === null) {
+            $invalidProperties[] = "'status' can't be null";
         }
         return $invalidProperties;
     }
@@ -269,145 +226,73 @@ class Client implements ModelInterface, ArrayAccess
 
 
     /**
-     * Gets key
+     * Gets message
      *
      * @return string
      */
-    public function getKey()
+    public function getMessage()
     {
-        return $this->container['key'];
+        return $this->container['message'];
     }
 
     /**
-     * Sets key
+     * Sets message
      *
-     * @param string $key The API key for this client.
+     * @param string $message success or failure
      *
      * @return $this
      */
-    public function setKey($key)
+    public function setMessage($message)
     {
-        $this->container['key'] = $key;
+        $this->container['message'] = $message;
 
         return $this;
     }
 
     /**
-     * Gets secret
+     * Gets result
      *
      * @return string
      */
-    public function getSecret()
+    public function getResult()
     {
-        return $this->container['secret'];
+        return $this->container['result'];
     }
 
     /**
-     * Sets secret
+     * Sets result
      *
-     * @param string $secret The API secret for this client.
+     * @param string $result result
      *
      * @return $this
      */
-    public function setSecret($secret)
+    public function setResult($result)
     {
-        $this->container['secret'] = $secret;
+        $this->container['result'] = $result;
 
         return $this;
     }
 
     /**
-     * Gets callbackUrl
+     * Gets status
      *
      * @return string
      */
-    public function getCallbackUrl()
+    public function getStatus()
     {
-        return $this->container['callbackUrl'];
+        return $this->container['status'];
     }
 
     /**
-     * Sets callbackUrl
+     * Sets status
      *
-     * @param string $callbackUrl Callback URL for OAuth authentication grant.
+     * @param string $status success or failure
      *
      * @return $this
      */
-    public function setCallbackUrl($callbackUrl)
+    public function setStatus($status)
     {
-        $this->container['callbackUrl'] = $callbackUrl;
-
-        return $this;
-    }
-
-    /**
-     * Gets description
-     *
-     * @return string
-     */
-    public function getDescription()
-    {
-        return $this->container['description'];
-    }
-
-    /**
-     * Sets description
-     *
-     * @param string $description Description of the client. This will be shown to users when authentication via OAuth web flows
-     *
-     * @return $this
-     */
-    public function setDescription($description)
-    {
-        $this->container['description'] = $description;
-
-        return $this;
-    }
-
-    /**
-     * Gets name
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->container['name'];
-    }
-
-    /**
-     * Sets name
-     *
-     * @param string $name The name of the client.
-     *
-     * @return $this
-     */
-    public function setName($name)
-    {
-        $this->container['name'] = $name;
-
-        return $this;
-    }
-
-    /**
-     * Gets tier
-     *
-     * @return string
-     */
-    public function getTier()
-    {
-        return $this->container['tier'];
-    }
-
-    /**
-     * Sets tier
-     *
-     * @param string $tier The access tier for this client.
-     *
-     * @return $this
-     */
-    public function setTier($tier)
-    {
-        $this->container['tier'] = $tier;
+        $this->container['status'] = $status;
 
         return $this;
     }
@@ -479,16 +364,6 @@ class Client implements ModelInterface, ArrayAccess
         }
 
         return json_encode(ObjectSerializer::sanitizeForSerialization($this));
-    }
-
-    /**
-     * Gets the string presentation of the object
-     *
-     * @return string
-     */
-    public function toArray()
-    {
-        return $this->container;
     }
 }
 
