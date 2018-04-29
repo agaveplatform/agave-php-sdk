@@ -54,9 +54,9 @@ class Token implements ModelInterface, ArrayAccess
     protected static $swaggerTypes = [
         'accessToken' => 'string',
         'refreshToken' => 'string',
-        'createdAt' => 'string',
-        'expiresAt' => 'string',
-        'expiresIn' => 'string',
+        'createdAt' => 'int',
+        'expiresAt' => 'int',
+        'expiresIn' => 'int',
         'scope' => 'string',
         'tokenType' => 'string'
     ];
@@ -69,8 +69,8 @@ class Token implements ModelInterface, ArrayAccess
     protected static $swaggerFormats = [
         'accessToken' => 'string',
         'refreshToken' => 'string',
-        'createdAt' => 'DateTime',
-        'expiresAt' => 'DateTime',
+        'createdAt' => 'integer',
+        'expiresAt' => 'integer',
         'expiresIn' => 'integer',
         'scope' => 'string',
         'tokenType' => 'string'
@@ -221,8 +221,13 @@ class Token implements ModelInterface, ArrayAccess
                 $data['token_type'] : null);
 
         $this->container['expiresIn'] = isset($data['expiresIn']) ?
-            $data['expiresIn'] : (isset($data['expires_in']) ?
-                $data['expires_in'] : null);
+            intval($data['expiresIn']) : (isset($data['expires_in']) ?
+                intval($data['expires_in']) : null);
+
+        if ($this->container['expiresAt'] == null && isset($this->container['expiresIn'])) {
+            $ts = time();
+            $this->container['expiresAt'] = $ts + $this->container['expiresIn'];
+        }
 
         $this->container['scope'] = isset($data['scope']) ? $data['scope'] : null;
     }
@@ -271,6 +276,16 @@ class Token implements ModelInterface, ArrayAccess
         return count($this->listInvalidProperties()) === 0;
     }
 
+    /**
+     * Checks the token lifetime for validity. Returns false if the expiresAt field is null
+     * or is in the past.
+     *
+     * @return boolean
+     */
+    public function isExpired()
+    {
+        return isset($this->container['expiresAt']) && time() >= $this->container['expiresAt'];
+    }
 
     /**
      * Gets access_token

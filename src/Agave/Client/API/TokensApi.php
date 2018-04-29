@@ -90,14 +90,15 @@ class TokensApi
      *
      * @param  string $username The username for which to request a token
      * @param  string $password The password to authenticate the token request
-     *
-     * @throws \Agave\Client\ApiException on non-2xx response
-     * @throws \InvalidArgumentException
+     * @param  string $clientKey The oauth client key
+     * @param  string $clientSecret The oauth client secret
+     * @param  string $scope
      * @return \Agave\Client\Model\SingleClientResponse
+     * @throws ApiException on non-2xx response
      */
-    public function create($username = null, $password = null)
+    public function create($username = null, $password = null, $clientKey = null, $clientSecret = null, $scope='PRODUCTION')
     {
-        list($response) = $this->createWithHttpInfo($username, $password);
+        list($response) = $this->createWithHttpInfo($username, $password, $clientKey, $clientSecret, $scope);
         return $response;
     }
 
@@ -106,15 +107,18 @@ class TokensApi
      *
      * @param  string $username The username for which to request a token
      * @param  string $password The password to authenticate the token request
+     * @param  string $clientKey The oauth client key
+     * @param  string $clientSecret The oauth client secret
+     * @param  string $scope
      *
      * @throws \Agave\Client\ApiException on non-2xx response
      * @throws \InvalidArgumentException
      * @return array of \Agave\Client\Model\SingleClientResponse, HTTP status code, HTTP response headers (array of strings)
      */
-    public function createWithHttpInfo($username = null, $password = null)
+    public function createWithHttpInfo($username = null, $password = null, $clientKey = null, $clientSecret = null, $scope='PRODUCTION')
     {
         $returnType = '\Agave\Client\Model\Token';
-        $request = $this->createRequest($username, $password);
+        $request = $this->createRequest($username, $password, $clientKey, $clientSecret, $scope);
 
         try {
             $options = $this->createHttpClientOption();
@@ -182,13 +186,16 @@ class TokensApi
      *
      * @param  string $username The username for which to request a token
      * @param  string $password The password to authenticate the token request
+     * @param  string $clientKey The oauth client key
+     * @param  string $clientSecret The oauth client secret
+     * @param  string $scope
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function createAsync($username = null, $password = null)
+    public function createAsync($username = null, $password = null, $clientKey = null, $clientSecret = null, $scope='PRODUCTION')
     {
-        return $this->createAsyncWithHttpInfo($username, $password)
+        return $this->createAsyncWithHttpInfo($username, $password, $clientKey, $clientSecret, $scope)
             ->then(
                 function ($response) {
                     return $response[0];
@@ -207,10 +214,10 @@ class TokensApi
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function createAsyncWithHttpInfo($username = null, $password = null)
+    public function createAsyncWithHttpInfo($username = null, $password = null, $clientKey = null, $clientSecret = null, $scope='PRODUCTION')
     {
         $returnType = '\Agave\Client\Model\Token';
-        $request = $this->createRequest($username, $password);
+        $request = $this->createRequest($username, $password, $clientKey, $clientSecret, $scope);
 
         return $this->client
             ->sendAsync($request, $this->createHttpClientOption())
@@ -254,12 +261,43 @@ class TokensApi
      *
      * @param  string $username The username for which to request a token
      * @param  string $password The password to authenticate the token request
+     * @param  string $clientKey The oauth client key
+     * @param  string $clientSecret The oauth client secret
+     * @param  string $scope
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Psr7\Request
      */
-    protected function createRequest($username = null, $password = null)
+    protected function createRequest($username = null, $password = null, $clientKey = null, $clientSecret = null, $scope='PRODUCTION')
     {
+        if (!isset($clientKey)) {
+            if ($this->config->getClientKey() == null) {
+                throw new \InvalidArgumentException(
+                    'Missing the required parameter $clientKey when calling create'
+                );
+            }
+            else {
+                $clientKey = $this->config->getClientKey();
+            }
+        }
+
+        if (!isset($clientSecret)) {
+            if ($this->config->getClientSecret() == null) {
+                throw new \InvalidArgumentException(
+                    'Missing the required parameter $clientSecret when calling create'
+                );
+            }
+            else {
+                $clientSecret = $this->config->getClientSecret();
+            }
+        }
+
+        if ($scope == null) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $scope when calling create'
+            );
+        }
+
         if ($username == null && $password == null) {
             // verify the required parameter 'body' is set
             if ($this->config->getUsername() === null) {
@@ -319,10 +357,8 @@ class TokensApi
         ]);
 
         // this endpoint requires HTTP basic authentication
-        if ($this->config->getUsername() !== null || $this->config->getPassword() !== null) {
-            $headers['Authorization'] = 'Basic ' . base64_encode($this->config->getAuthCache()->getApikey() .
-                    ":" . $this->config->getAuthCache()->getApisecret());
-        }
+        $headers['Authorization'] = 'Basic ' . base64_encode($clientKey . ":" . $clientSecret);
+
 
         $defaultHeaders = [];
         if ($this->config->getUserAgent()) {
@@ -349,14 +385,16 @@ class TokensApi
      * Operation refresh
      *
      * @param  string $refreshToken The refresh token with which to request a new auth token. Defaults to the refresh token in the client config
+     * @param  string $clientKey The oauth client key
+     * @param  string $clientSecret The oauth client secret
      *
      * @throws \Agave\Client\ApiException on non-2xx response
      * @throws \InvalidArgumentException
      * @return \Agave\Client\Model\SingleClientResponse
      */
-    public function refresh($refreshToken = null)
+    public function refresh($refreshToken = null, $clientKey = null, $clientSecret = null)
     {
-        list($response) = $this->refreshWithHttpInfo($refreshToken);
+        list($response) = $this->refreshWithHttpInfo($refreshToken, $clientKey, $clientSecret);
         return $response;
     }
 
@@ -364,15 +402,17 @@ class TokensApi
      * Operation refreshWithHttpInfo
      *
      * @param  string $refreshToken The refresh token with which to request a new auth token. Defaults to the refresh token in the client config
+     * @param  string $clientKey The oauth client key
+     * @param  string $clientSecret The oauth client secret
      *
      * @throws \Agave\Client\ApiException on non-2xx response
      * @throws \InvalidArgumentException
      * @return array of \Agave\Client\Model\SingleClientResponse, HTTP status code, HTTP response headers (array of strings)
      */
-    public function refreshWithHttpInfo($refreshToken = null)
+    public function refreshWithHttpInfo($refreshToken = null, $clientKey = null, $clientSecret = null)
     {
         $returnType = '\Agave\Client\Model\RefreshToken';
-        $request = $this->refreshRequest($refreshToken);
+        $request = $this->refreshRequest($refreshToken, $clientKey, $clientSecret);
 
         try {
             $options = $this->createHttpClientOption();
@@ -439,13 +479,15 @@ class TokensApi
      *
      *
      * @param  string $refreshToken The refresh token with which to request a new auth token. Defaults to the refresh token in the client config
+     * @param  string $clientKey The oauth client key
+     * @param  string $clientSecret The oauth client secret
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function refreshAsync($refreshToken = null)
+    public function refreshAsync($refreshToken = null, $clientKey = null, $clientSecret = null)
     {
-        return $this->refreshAsyncWithHttpInfo($refreshToken)
+        return $this->refreshAsyncWithHttpInfo($refreshToken, $clientKey, $clientSecret)
             ->then(
                 function ($response) {
                     return $response[0];
@@ -459,14 +501,16 @@ class TokensApi
      *
      *
      * @param  string $refreshToken The refresh token with which to request a new auth token. Defaults to the refresh token in the client config
+     * @param  string $clientKey The oauth client key
+     * @param  string $clientSecret The oauth client secret
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function refreshAsyncWithHttpInfo($refreshToken = null)
+    public function refreshAsyncWithHttpInfo($refreshToken = null, $clientKey = null, $clientSecret = null)
     {
         $returnType = '\Agave\Client\Model\RefreshToken';
-        $request = $this->refreshRequest($refreshToken);
+        $request = $this->refreshRequest($refreshToken, $clientKey, $clientSecret);
 
         return $this->client
             ->sendAsync($request, $this->createHttpClientOption())
@@ -509,17 +553,41 @@ class TokensApi
      * Create request for operation 'refresh'
      *
      * @param  string $refreshToken The refresh token with which to request a new auth token. Defaults to the refresh token in the client config
+     * @param  string $clientKey The oauth client key
+     * @param  string $clientSecret The oauth client secret
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Psr7\Request
      */
-    protected function refreshRequest($refreshToken = null)
+    protected function refreshRequest($refreshToken = null, $clientKey = null, $clientSecret = null)
     {
+        if (!isset($clientKey)) {
+            if ($this->config->getClientKey() == null) {
+                throw new \InvalidArgumentException(
+                    'Missing the required parameter $clientKey when calling refresh'
+                );
+            }
+            else {
+                $clientKey = $this->config->getClientKey();
+            }
+        }
+
+        if (!isset($clientSecret)) {
+            if ($this->config->getClientSecret() == null) {
+                throw new \InvalidArgumentException(
+                    'Missing the required parameter $clientSecret when calling refresh'
+                );
+            }
+            else {
+                $clientSecret = $this->config->getClientSecret();
+            }
+        }
+
         // verify the required parameter 'refreshToken' is set
         if ($refreshToken == null ) {
             if ($this->config->getRefreshToken() === null) {
                 throw new \InvalidArgumentException(
-                    'Missing an refresh token when calling refresg'
+                    'Missing the requried parameter $refreshToken when calling refresh'
                 );
             }
             else {
@@ -545,10 +613,7 @@ class TokensApi
         ]);
 
         // this endpoint requires HTTP basic authentication
-        if ($this->config->getUsername() !== null || $this->config->getPassword() !== null) {
-            $headers['Authorization'] = 'Basic ' . base64_encode($this->config->getAuthCache()->getApikey() .
-                    ":" . $this->config->getAuthCache()->getApisecret());
-        }
+        $headers['Authorization'] = 'Basic ' . base64_encode($clientKey . ":" . $clientSecret);
 
         $defaultHeaders = [];
         if ($this->config->getUserAgent()) {
@@ -575,14 +640,16 @@ class TokensApi
      * Operation revoke
      *
      * @param  string $accessToken The access token to revoke. Defaults to the access token in the client config
+     * @param  string $clientKey The oauth client key
+     * @param  string $clientSecret The oauth client secret
      *
      * @throws \Agave\Client\ApiException on non-2xx response
      * @throws \InvalidArgumentException
      * @return \Agave\Client\Model\EmptyClientResponse
      */
-    public function revoke($accessToken)
+    public function revoke($accessToken, $clientKey = null, $clientSecret = null)
     {
-        list($response) = $this->revokeWithHttpInfo($accessToken);
+        list($response) = $this->revokeWithHttpInfo($accessToken, $clientKey, $clientSecret);
         return $response;
     }
 
@@ -590,15 +657,17 @@ class TokensApi
      * Operation revokeWithHttpInfo
      *
      * @param  string $accessToken The access token to revoke. Defaults to the access token in the client config
+     * @param  string $clientKey The oauth client key
+     * @param  string $clientSecret The oauth client secret
      *
      * @throws \Agave\Client\ApiException on non-2xx response
      * @throws \InvalidArgumentException
      * @return array of \Agave\Client\Model\EmptyClientResponse, HTTP status code, HTTP response headers (array of strings)
      */
-    public function revokeWithHttpInfo($accessToken)
+    public function revokeWithHttpInfo($accessToken, $clientKey = null, $clientSecret = null)
     {
         $returnType = '\Agave\Client\Model\EmptyTokenResponse';
-        $request = $this->revokeRequest($accessToken);
+        $request = $this->revokeRequest($accessToken, $clientKey, $clientSecret);
 
         try {
             $options = $this->createHttpClientOption();
@@ -665,13 +734,15 @@ class TokensApi
      * 
      *
      * @param  string $accessToken The access token to revoke. Defaults to the access token in the client config
+     * @param  string $clientKey The oauth client key
+     * @param  string $clientSecret The oauth client secret
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function revokeAsync($accessToken = null)
+    public function revokeAsync($accessToken = null, $clientKey = null, $clientSecret = null)
     {
-        return $this->revokeAsyncWithHttpInfo($accessToken)
+        return $this->revokeAsyncWithHttpInfo($accessToken, $clientKey, $clientSecret)
             ->then(
                 function ($response) {
                     return $response[0];
@@ -685,14 +756,16 @@ class TokensApi
      * 
      *
      * @param  string $accessToken The access token to revoke. Defaults to the access token in the client config
+     * @param  string $clientKey The oauth client key
+     * @param  string $clientSecret The oauth client secret
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function revokeAsyncWithHttpInfo($accessToken)
+    public function revokeAsyncWithHttpInfo($accessToken, $clientKey = null, $clientSecret = null)
     {
         $returnType = '\Agave\Client\Model\EmptyTokenResponse';
-        $request = $this->revokeRequest($accessToken);
+        $request = $this->revokeRequest($accessToken, $clientKey, $clientSecret);
 
         return $this->client
             ->sendAsync($request, $this->createHttpClientOption())
@@ -731,12 +804,36 @@ class TokensApi
      * Create request for operation 'revoke'
      *
      * @param  string $accessToken The access token to revoke. Defaults to the access token in the client config
+     * @param  string $clientKey The oauth client key
+     * @param  string $clientSecret The oauth client secret
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Psr7\Request
      */
-    protected function revokeRequest($accessToken = null)
+    protected function revokeRequest($accessToken = null, $clientKey = null, $clientSecret = null)
     {
+        if (!isset($clientKey)) {
+            if ($this->config->getClientKey() == null) {
+                throw new \InvalidArgumentException(
+                    'Missing the required parameter $clientKey when calling create'
+                );
+            }
+            else {
+                $clientKey = $this->config->getClientKey();
+            }
+        }
+
+        if (!isset($clientSecret)) {
+            if ($this->config->getClientSecret() == null) {
+                throw new \InvalidArgumentException(
+                    'Missing the required parameter $clientSecret when calling create'
+                );
+            }
+            else {
+                $clientSecret = $this->config->getClientSecret();
+            }
+        }
+
         // verify the required parameter 'accessToken' is set
         if ($accessToken == null ) {
             if ($this->config->getAccessToken() === null) {
@@ -774,9 +871,7 @@ class TokensApi
         $httpBody = \GuzzleHttp\Psr7\build_query(['token' => $accessToken]);
 
         // this endpoint requires HTTP basic authentication
-        if ($this->config->getUsername() !== null || $this->config->getPassword() !== null) {
-            $headers['Authorization'] = 'Basic ' . base64_encode($this->config->getUsername() . ":" . $this->config->getPassword());
-        }
+        $headers['Authorization'] = 'Basic ' . base64_encode($clientKey . ":" . $clientSecret);
 
         $defaultHeaders = [];
         if ($this->config->getUserAgent()) {

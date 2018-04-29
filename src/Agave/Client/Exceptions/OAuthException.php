@@ -15,7 +15,7 @@
  * OpenAPI spec version: 2.2.14
  */
 
-namespace Agave\Client;
+namespace Agave\Client\Exceptions;
 
 use \Exception;
 use Throwable;

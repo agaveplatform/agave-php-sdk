@@ -11,6 +11,8 @@ namespace Agave\Client;
 
 use Agave\Client\API\ClientsApi;
 use Agave\Client\API\TokensApi;
+use Agave\Client\Exceptions\ConfigurationException;
+use Agave\Client\Exceptions\OAuthException;
 use Agave\Client\Model\Client;
 use Agave\Client\Model\ClientSubscriptionTier;
 use Agave\Client\Model\EmptyClientResponse;
@@ -19,6 +21,8 @@ use Agave\Client\Model\Token;
 use Agave\Client\Util\AuthCacheUtil;
 use Agave\Client\Util\AuthCacheUtilTest;
 use Faker\Generator;
+use phpDocumentor\Reflection\Types\This;
+use PHPUnit_Framework_Constraint_IsType;
 use PHPUnit_Framework_MockObject_MockObject;
 
 class ConfigurationTest extends \PHPUnit_Framework_TestCase
@@ -78,16 +82,24 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
         putenv('AGAVE_REFRESH_TOKEN');
     }
 
-    private function getFakeAuthCacheUtil() {
+    private function getFakeAuthCacheUtilData($data = []) {
         $authCacheTest = new AuthCacheUtilTest();
-        return new AuthCacheUtil($authCacheTest->_getDefaultModelTestData());
+        $authCacheData = $authCacheTest->_getDefaultModelTestData();
+        $authCacheData['password'] = uniqid();
+        $authCacheData['authCacheDir'] = sys_get_temp_dir() . "/" . uniqid();
+
+        return array_merge($authCacheData, $data);
+    }
+
+    private function getFakeAuthCacheUtil($data = []) {
+        return new AuthCacheUtil($this->getFakeAuthCacheUtilData($data));
     }
 
     private function getFakeClient()
     {
         return new Client([
-            'key' => self::$FAKER->randomAscii,
-            'secret' => self::$FAKER->randomAscii,
+            'key' => self::$FAKER->word,
+            'secret' => self::$FAKER->word,
             'tier' => ClientSubscriptionTier::UNLIMITED,
             'callbackUrl' => self::$FAKER->url,
             'name' => self::DEFAULT_CLIENT_NAME_VALUE,
@@ -99,8 +111,8 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
         $expiresIn = self::$FAKER->numberBetween(0, 14400);
 
         return new Token([
-            'access_token' => self::$FAKER->randomAscii,
-            'refresh_token' => self::$FAKER->randomAscii,
+            'access_token' => self::$FAKER->word,
+            'refresh_token' => self::$FAKER->word,
             'expires_in' => $expiresIn,
             'token_type' => 'bearer',
             'scope' => 'default'
@@ -189,7 +201,7 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
     /**
      * Verify the default config loads the auth cache
      *
-     * @expectedException        \Agave\Client\OAuthException
+     * @expectedException        \Agave\Client\Exceptions\OAuthException
      * @throws OAuthException
      * @throws ApiException
      */
@@ -216,7 +228,7 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
     /**
      * Verify the default config loads the auth cache
      *
-     * @expectedException        \Agave\Client\OAuthException
+     * @expectedException        \Agave\Client\Exceptions\OAuthException
      * @throws OAuthException
      * @throws ApiException
      */
@@ -243,7 +255,7 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
     /**
      * Verify the default config loads the auth cache
      *
-     * @expectedException        \Agave\Client\OAuthException
+     * @expectedException        \Agave\Client\Exceptions\OAuthException
      * @throws OAuthException
      * @throws ApiException
      */
@@ -463,21 +475,23 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
     public function testRestoreStringDataProvider() {
 
         $defaultCacheDir = AuthCacheUtil::getDefaultAuthCacheDirectory();
-        $userPath = "/user/supplied/path/";
-
-        $authCacheUtilPath = "/existing/auth/cache/dir/path/";
+        $userPath = "/user/supplied/path";
 
         $environmentCacheDirPath = "/environment/variable/path";
 
         return [
             //user path         AGAVE_CACHE_DIR             expected
-            [ "",               null,                       getcwd()],
-            [ "",               "",                         getcwd()],
-            [ "",               $environmentCacheDirPath,   getcwd()],
+            [ "",               null,                       getcwd()."/"],
+            [ "",               "",                         getcwd()."/"],
+            [ "",               $environmentCacheDirPath,   getcwd()."/"],
 
-            [ $userPath,        null,                       $userPath],
-            [ $userPath,        "",                         $userPath],
-            [ $userPath,        $environmentCacheDirPath,   $userPath],
+            [ $userPath,        null,                       $userPath."/"],
+            [ $userPath,        "",                         $userPath."/"],
+            [ $userPath,        $environmentCacheDirPath,   $userPath."/"],
+
+            [ $userPath."/",        null,                       $userPath."/"],
+            [ $userPath."/",        "",                         $userPath."/"],
+            [ $userPath."/",        $environmentCacheDirPath,   $userPath."/"],
         ];
     }
 
@@ -500,35 +514,45 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
                 putenv("AGAVE_CACHE_DIR={$existingEnvironmentAuthCacheDirPath}");
             }
 
-            /** @var Configuration $configurationStub */
-            $configurationStub = $this->getMockBuilder(Configuration::class)
-                ->setMethods(['getAuthCacheDir', 'callStatic'])
-                ->setConstructorArgs([])
-                ->disableProxyingToOriginalMethods()
-                ->disableArgumentCloning()
-                ->disableAutoload()
-                ->getMock();
-
+//            /** @var Configuration $configurationStub */
+//            $configurationStub = $this->getMockBuilder(Configuration::class)
+//                ->setMethods(['getAuthCacheDir', 'callStatic'])
+//                ->setConstructorArgs([])
+//                ->disableProxyingToOriginalMethods()
+//                ->disableArgumentCloning()
+//                ->disableAutoload()
+//                ->getMock();
 
             $fakeAuthCacheUtil = $this->getFakeAuthCacheUtil();
 
-            $configurationStub->expects($this->once())
-                ->method('callStatic')
-                ->with(AuthCacheUtil::class, 'readFromFile', $restorePath)
-                ->willReturn($fakeAuthCacheUtil);
+            $fakeAuthCacheUtil->setAuthCacheDir(null);
+
+            $configuration = new Configuration();
+
+            $configuration->setAuthCache($fakeAuthCacheUtil);
+
+            $configuration->restore($restorePath);
+
+            $this->assertEquals($expectedAuthCacheDirPath, $configuration->getAuthCacheDir(),
+                "Auth cache directory should be " . $expectedAuthCacheDirPath);
+
+//            $configurationStub->expects($this->once())
+//                ->method('callStatic')
+//                ->with(AuthCacheUtil::class, 'readFromFile', $restorePath);
+//                ->willReturn($fakeAuthCacheUtil);
 //
 //            // sets default fake path for the config file in the mocked AuthCacheUtil.
 //            $configurationStub->method('getAuthCache')
 //                ->willReturn();
 
             // sets default fake path for the config file in the mocked AuthCacheUtil.
-            $configurationStub->method('getAuthCacheDir')
-                ->willReturn(null);
-
-            $configurationStub->restore($restorePath);
-
-            $this->assertEquals($expectedAuthCacheDirPath, $configurationStub->getAuthCacheDir(),
-                "Auth cache directory should be " . $expectedAuthCacheDirPath);
+//            $configurationStub->method('getAuthCacheDir')
+//                ->willReturn(null);
+//
+//            $configurationStub->restore($restorePath);
+//
+//            $this->assertEquals($expectedAuthCacheDirPath, $configurationStub->getAuthCache()->getAuthCacheDir(),
+//                "Auth cache directory should be " . $expectedAuthCacheDirPath);
 
         }
         finally {
@@ -543,9 +567,8 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
     public function testRestoreNullDataProvider() {
 
         $defaultCacheDir = AuthCacheUtil::getDefaultAuthCacheDirectory();
-        $userPath = "/user/supplied/path/";
 
-        $authCacheUtilPath = "/existing/auth/cache/dir/path/";
+        $authCacheUtilPath = "/existing/auth/cache/dir/path";
 
         $environmentCacheDirPath = "/environment/variable/path";
 
@@ -553,15 +576,22 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
             //authCacheDir       AGAVE_CACHE_DIR             expected
             [null,               null,                       $defaultCacheDir],
             [null,               "",                         $defaultCacheDir],
-            [null,               $environmentCacheDirPath,   $environmentCacheDirPath],
+            [null,               $environmentCacheDirPath,   $environmentCacheDirPath."/"],
+            [null,               $environmentCacheDirPath."/",   $environmentCacheDirPath."/"],
 
-            ["",                 null,                       getcwd()],
-            ["",                 "",                         getcwd()],
-            ["",                 $environmentCacheDirPath,   getcwd()],
+            ["",                 null,                       getcwd()."/"],
+            ["",                 "",                         getcwd()."/"],
+            ["",                 $environmentCacheDirPath,   getcwd()."/"],
+            ["",                 $environmentCacheDirPath."/",   getcwd()."/"],
 
-            [$authCacheUtilPath, null,                       $authCacheUtilPath],
-            [$authCacheUtilPath, "",                         $authCacheUtilPath],
-            [$authCacheUtilPath, $environmentCacheDirPath,   $authCacheUtilPath]
+            [$authCacheUtilPath, null,                       $authCacheUtilPath."/"],
+            [$authCacheUtilPath, "",                         $authCacheUtilPath."/"],
+            [$authCacheUtilPath, $environmentCacheDirPath,   $authCacheUtilPath."/"],
+
+            [$authCacheUtilPath."/", null,                       $authCacheUtilPath."/"],
+            [$authCacheUtilPath."/", "",                         $authCacheUtilPath."/"],
+            [$authCacheUtilPath."/", $environmentCacheDirPath,   $authCacheUtilPath."/"],
+            [$authCacheUtilPath."/", $environmentCacheDirPath."/",   $authCacheUtilPath."/"],
         ];
     }
 
@@ -584,64 +614,186 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
                 putenv("AGAVE_CACHE_DIR={$existingEnvironmentAuthCacheDirPath}");
             }
 
-            /** @var Configuration $configurationStub */
-            $configurationStub = $this->getMockBuilder(Configuration::class)
-                ->setMethods(['getAuthCache','getAuthCacheDir', 'callStatic'])
-                ->setConstructorArgs([])
-                ->disableProxyingToOriginalMethods()
-                ->disableArgumentCloning()
-                ->disableAutoload()
-                ->getMock();
-
             $fakeAuthCacheUtil = $this->getFakeAuthCacheUtil();
 
-            $configurationStub->expects($this->once())
-                ->method('callStatic')
-                ->with(AuthCacheUtil::class, 'readFromFile', $exisingAuthCacheDirPath)
-                ->willReturn($fakeAuthCacheUtil);
+            $fakeAuthCacheUtil->setAuthCacheDir($exisingAuthCacheDirPath);
 
-            // sets default fake path for the config file in the mocked AuthCacheUtil.
-            $configurationStub->method('getAuthCacheDir')
-                ->willReturn($exisingAuthCacheDirPath);
+            $configuration = new Configuration();
 
-            $configurationStub->restore(null);
+            $configuration->setAuthCache($fakeAuthCacheUtil);
 
-            $this->assertEquals($expectedAuthCacheDirPath, $configurationStub->getAuthCacheDir(),
+            $configuration->restore();
+
+            $this->assertEquals($expectedAuthCacheDirPath, $configuration->getAuthCacheDir(),
                 "Auth cache directory should be " . $expectedAuthCacheDirPath);
-
         }
         finally {
             putenv("AGAVE_CACHE_DIR");
         }
     }
 
+    /**
+     * Tests that restoring loads a config from disk, then calls the Configuration::readFromEnvironment()
+     * method
+     */
     public function testRestoreOnlyFromEnvironment()
     {
+        try {
 
+            $this->unsetAgaveEnvironmentVariables();
+
+            $this->setFakeAgaveEnvironmentVariables();
+
+            $fakeAuthCacheUtil = $this->getFakeAuthCacheUtil();
+
+            $fakeAuthCacheUtil->setAuthCacheDir(null);
+
+            $configuration = new Configuration();
+
+            $configuration->setAuthCache($fakeAuthCacheUtil);
+
+            $configuration->restore();
+
+            $env = array_filter(getenv(), function($value, $key) {
+                return (strpos($key, "AGAVE_") === 0);
+            }, ARRAY_FILTER_USE_BOTH);
+
+            $updatedAuthConfigData = $configuration->getAuthCache()->toArray();
+
+            foreach (AuthCacheUtil::$environmenVariableMap as $environmentVariableName => $localName) {
+                if (!empty($localName)) {
+                    $this->assertEquals(getenv($environmentVariableName), $updatedAuthConfigData[$localName],
+                    "The value of {$environmentVariableName} should overwrite the existing auth cache {$localName} value.");
+                }
+            }
+
+
+        }
+        finally {
+            $this->unsetAgaveEnvironmentVariables();
+        }
     }
 
-    public function testRestoreFromEnvironmentTrumpsFromDisk()
-    {
+    /**
+     * Data provider for testAuthenticate. Generates all combinations of valid, null, and empty
+     * username, password, client key, and client secret to test Configuration#authenticate()
+     * @return array
+     */
+    public function authenticateDataProvider() {
 
+        $faker = \Faker\Factory::create();
+
+        $username = $faker->userName;
+        $password = $faker->password;
+        $clientKey = $faker->word;
+        $clientSecret = $faker->word;
+
+        $testData = [];
+
+        foreach ([$username, null, ''] as $user) {
+            foreach ([$password, null, ''] as $pass) {
+                foreach ([$clientKey, null, ''] as $key) {
+                    foreach ([$clientSecret, null, ''] as $secret) {
+                        $testData[] = [ $user, $pass, $key, $secret ];
+                    }
+                }
+            }
+        }
+
+        return $testData;
     }
 
+    /**
+     * Tests exception and calling behavior of Configuration#authenticate() method.
+     * @param $username
+     * @param $password
+     * @param $clientKey
+     * @param $clientSecret
+     * @param $shouldThrowException
+     *
+     * @dataProvider authenticateDataProvider
+     */
+    public function testAuthenticate($username, $password, $clientKey, $clientSecret) {
+        try {
+
+            $this->unsetAgaveEnvironmentVariables();
+
+            $this->setFakeAgaveEnvironmentVariables();
+
+//            /** @var Configuration $configurationStub */
+            $configuration = $this->getMockBuilder(Configuration::class)
+                ->setMethods(['getTokensApi', 'getAuthCache', 'getAuthCacheDir', 'setAuthCacheDir', 'setToken', 'callStatic', 'getUsername', 'getPassword', 'getClientKey', 'getClientSecret'])
+                ->setConstructorArgs([])
+                ->disableProxyingToOriginalMethods()
+                ->disableArgumentCloning()
+                ->disableAutoload()
+                ->getMock();
+
+            $fakeAuthCache = $this->getFakeAuthCacheUtil([
+                    'username' => $username,
+                    'password' => $password,
+                    'clientKey' => $clientKey,
+                    'clientSecret' => $clientSecret,]
+            );
 
 
-    public function testAuthenticate()
-    {
+            $tokensApiStub = $this->getMockBuilder(TokensApi::class)
+                ->setMethods(['create'])
+                ->setConstructorArgs([$configuration])
+                ->disableProxyingToOriginalMethods()
+                ->disableArgumentCloning()
+                ->disableAutoload()
+                ->getMock();
 
+            /** @var Token $fakeToken */
+            $fakeToken = $this->getFakeToken();
+
+            $fluentTokenCreate = $tokensApiStub->expects($this->once())
+                ->method('create')
+                ->with($this->equalTo($username),
+                    $this->equalTo($password),
+                    $this->equalTo($clientKey),
+                    $this->equalTo($clientSecret))
+                ->willReturn($fakeToken);
+
+            $configuration->expects($this->once())
+                    ->method("setToken")
+                    ->with($this->equalTo($fakeToken))
+                    ->willReturnSelf();
+
+
+            $configuration->expects($this->once())
+                ->method("getTokensApi")
+                ->willReturn($tokensApiStub);
+
+
+            $configuration->method("getAuthCache")
+                ->willReturn($fakeAuthCache);
+
+            $configuration->method("getUsername")
+                ->willReturn($username);
+
+            $configuration->method("getPassword")
+                ->willReturn($password);
+
+            $configuration->method("getClientKey")
+                ->willReturn($clientKey);
+
+            $configuration->method("getClientSecret")
+                ->willReturn($clientSecret);
+
+            // make the auth call and verify the behavior
+            $configuration->authenticate();
+        }
+        finally {
+            $this->unsetAgaveEnvironmentVariables();
+        }
     }
 
     public function testBootstrap()
     {
-
-    }
-
-
-
-    public function testToDebugReport()
-    {
-
+        $configuration = new Configuration();
+        $fakeAuthCacheUtil = $this->getFakeAuthCacheUtil();
     }
 
 }

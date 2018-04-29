@@ -10,7 +10,7 @@ namespace Agave\Client\Util;
 
 
 use Agave\Client\ApiException;
-use Agave\Client\ConfigurationException;
+use Agave\Client\Exceptions\ConfigurationException;
 
 class AuthCacheUtilTest extends \PHPUnit_Framework_TestCase
 {
@@ -878,6 +878,8 @@ class AuthCacheUtilTest extends \PHPUnit_Framework_TestCase
 
     /**
      * Tests empty initialization when user-supplied cache directory exists with a valid cache file
+     * @throws ConfigurationException
+     * @expectedException \Agave\Client\Exceptions\ConfigurationException
      */
     public function testReadFromFileThrowsExceptionWhenConfigPathIsFileNotNamedCurrent()
     {
@@ -898,9 +900,6 @@ class AuthCacheUtilTest extends \PHPUnit_Framework_TestCase
             AuthCacheUtil::readFromFile($renamedCacheFilePath);
 
             $this->fail("Exception should be thrown when a path is given to a file not named 'current'");
-        }
-        catch (ConfigurationException $e) {
-            // should throw a config exception for the misnamed file
         }
         finally {
             // delete the written cache file

@@ -9,11 +9,14 @@
         <testsuite>
             <directory>./test/Api</directory>
             <directory>./test/Model</directory>
+            <directory>./test/Util</directory>
+            <directory>./test</directory>
         </testsuite>
     </testsuites>
 
     <filter>
         <whitelist processUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">./src/Agave/Client</directory>
             <directory suffix=".php">./src/Agave/Client/API</directory>
             <directory suffix=".php">./src/Agave/Client/Model</directory>
             <directory suffix=".php">./src/Agave/Client/Util</directory>

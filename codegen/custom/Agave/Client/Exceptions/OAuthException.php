@@ -1,6 +1,6 @@
 <?php
 /**
- * ConfigurationException
+ * OAuthException
  * PHP version 5
  *
  * @category Class
@@ -15,18 +15,18 @@
  * OpenAPI spec version: 2.2.14
  */
 
-namespace Agave\Client;
+namespace Agave\Client\Exceptions;
 
 use \Exception;
 use Throwable;
 
 /**
- * ApiException Class Doc Comment
+ * OAuthException Class Doc Comment
  *
  * @category Class
  * @package  Agave\Client
  */
-class ConfigurationException extends Exception
+class OAuthException extends Exception
 {
     public function __construct($message = "", $code = 0, Throwable $previous = null)
     {

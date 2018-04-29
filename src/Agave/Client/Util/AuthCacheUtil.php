@@ -26,12 +26,13 @@
 namespace Agave\Client\Util;
 
 use Agave\Client\Configuration;
-use Agave\Client\ConfigurationException;
+use Agave\Client\Exceptions\ConfigurationException;
+use Agave\Client\Model\Client;
 use Agave\Client\Model\ModelInterface;
+use Agave\Client\Model\Token;
 use \ArrayAccess;
 use \Agave\Client\ObjectSerializer;
 use DateTime;
-use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 
 /**
  * AuthCacheUtil
@@ -53,6 +54,20 @@ class AuthCacheUtil implements ModelInterface, ArrayAccess
     protected static $authCache = null;
 
     protected $authCacheDir = null;
+
+
+    public static $environmenVariableMap = [
+        'AGAVE_BASE_URL' => 'baseUrl',
+        'AGAVE_DEV_URL' => 'devUrl',
+        'AGAVE_TENANT' => 'tenantId',
+        'AGAVE_ACCESS_TOKEN' => 'accessToken',
+        'AGAVE_REFRESH_TOKEN' => 'refreshToken',
+        'AGAVE_CLIENT_KEY' => 'apiKey',
+        'AGAVE_CLIENT_SECRET' => 'apiSecret',
+        'AGAVE_CLIENT_NAME' => 'clientName',
+        'AGAVE_USERNAME' => 'username',
+        'AGAVE_PASSWORD' => null,
+    ];
 
     /**
      * Array of property to type mappings. Used for (de)serialization
@@ -667,6 +682,9 @@ class AuthCacheUtil implements ModelInterface, ArrayAccess
         if ($path === null) {
             $path = self::getDefaultAuthCacheDirectory();
         }
+        if (trim($path) == null) {
+            $path = getcwd();
+        }
 
         if (file_exists($path)) {
             if (is_file($path)) {
@@ -746,6 +764,48 @@ class AuthCacheUtil implements ModelInterface, ArrayAccess
     }
 
 
+    /**
+     * Updates the AuthCacheUtil with the values from the Token
+     *
+     * @param Token $token
+     * @return $this
+     */
+    public function setToken($token) {
+        if (isset($token)) {
+            $this->setAccessToken($token->getAccessToken());
+            $this->setRefreshToken($token->getRefreshToken());
+            $this->setExpiresIn($token->getExpiresIn());
+            $this->setExpiresAt($token->getExpiresAt());
+        }
+
+        return $this;
+    }
+
+
+    /**
+     * Updates the AuthCache with the values from the Client
+     *
+     * @param Client $client
+     */
+    public function setClient($client) {
+        if (isset($client)) {
+            $this->setApiSecret($client->getSecret());
+            $this->setApiKey($client->getKey());
+            $this->setClientName($client->getName());
+        }
+
+        return $this;
+    }
+
+    /**
+     * Gets the string presentation of the object
+     *
+     * @return string
+     */
+    public function toArray()
+    {
+        return $this->container;
+    }
 }
 
 

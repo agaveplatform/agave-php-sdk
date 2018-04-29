@@ -30,6 +30,7 @@ namespace Agave\Client;
 
 use Agave\Client\API\ClientsApi;
 use Agave\Client\API\TokensApi;
+use Agave\Client\Exceptions\OAuthException;
 use Agave\Client\Model\Client;
 use Agave\Client\Model\ClientRequest;
 use Agave\Client\Model\ClientSubscriptionTier;
@@ -55,19 +56,6 @@ class Configuration
     use StaticCalling;
 
     private static $defaultConfiguration;
-
-    protected static $ENVIRONMENT_VARIABLE_NAMES = [
-        'AGAVE_BASE_URL',
-        'AGAVE_DEV_URL',
-        'AGAVE_TENANT',
-        'AGAVE_ACCESS_TOKEN',
-        'AGAVE_REFRESH_TOKEN',
-        'AGAVE_CLIENT_KEY',
-        'AGAVE_CLIENT_SECRET',
-        'AGAVE_CLIENT_NAME',
-        'AGAVE_USERNAME',
-        'AGAVE_PASSWORD',
-    ];
 
     /**
      * Associate array to store API key(s)
@@ -157,10 +145,11 @@ class Configuration
     /**
      * Constructor
      */
-    public function __construct()
+    public function __construct(array $data = [])
     {
         $this->tempFolderPath = sys_get_temp_dir();
-        $this->authCache = new AuthCacheUtil();
+
+        $this->authCache = new AuthCacheUtil($data);
     }
 
     /**
@@ -329,7 +318,6 @@ class Configuration
         return $this;
     }
 
-
     /**
      * @return string
      */
@@ -401,7 +389,6 @@ class Configuration
         $this->authCache = $authCache;
         return $this;
     }
-
 
     /**
      * @return string directory where auth cache file is stored
@@ -629,20 +616,20 @@ class Configuration
      */
     public function restore($agaveCacheDirectory = null) {
 
-        $agaveCacheDirectory = $agaveCacheDirectory ?: $this->getAuthCacheDir();
+        $agaveCacheDirectory = isset($agaveCacheDirectory) ? $agaveCacheDirectory : $this->getAuthCacheDir();
 
         /** @var AuthCacheUtil $authCache */
         $this->authCache = $this->callStatic(AuthCacheUtil::class, 'readFromFile', $agaveCacheDirectory);
 
-        $this->restoreFromEnvironment();
-
-        return $this;
+        return $this->restoreFromEnvironment();
     }
 
     /**
      * Reads in all Agave environment variables and merges them with the current Configuration object.
      * This is read every time the #restore($cacheDirectory) method is called to allow for environment
      * configurations to take preference over the default auth config file.
+     *
+     * @return $this
      */
     public function restoreFromEnvironment() {
         $this->setPassword(self::env("AGAVE_PASSWORD"));
@@ -657,6 +644,8 @@ class Configuration
         $this->getAuthCache()->setTenantId(self::env('AGAVE_TENANT', $this->getAuthCache()->getTenantId()));
         $this->getAuthCache()->setAccessToken(self::env('AGAVE_ACCESS_TOKEN', $this->getAuthCache()->getAccessToken()));
         $this->getAuthCache()->setRefreshToken(self::env('AGAVE_REFRESH_TOKEN', $this->getAuthCache()->getRefreshToken()));
+
+        return $this;
     }
 
     /**
@@ -699,17 +688,20 @@ class Configuration
     }
 
     /**
-     * Fetches a new access token from the Agave Platform using the username and password
+     * Fetches a new access token from the Agave Platform using the clientKey, clientSecret, username and password
      * in this Configuration.
+     *
+     * @return $this
      *
      * @throws ApiException
      */
     public function authenticate() {
 
+        $tokensApi = $this->getTokensApi();
         /** @var Token $token */
-        $token = $this->getTokensApi()->create($this->getUsername(), $this->getPassword());
+        $token = $tokensApi->create($this->getUsername(), $this->getPassword(), $this->getClientKey(), $this->getClientSecret());
 
-        $this->setToken($token);
+        return $this->setToken($token);
     }
 
     /**
@@ -796,8 +788,8 @@ class Configuration
      * Returns the environment variable names used by the SDK
      * @return array
      */
-    public static function getEnvironmentVariableNames() {
-        return self::$ENVIRONMENT_VARIABLE_NAMES;
+    public static function getEnvironmentVariableMap() {
+        return AuthCacheUtil::$environmenVariableMap;
     }
 
     /**
@@ -873,9 +865,7 @@ class Configuration
      */
     public function setClient($client)
     {
-        $this->getAuthCache()->setClientName($client->getName());
-        $this->getAuthCache()->setApiKey($client->getKey());
-        $this->getAuthCache()->setApiSecret($client->getSecret());
+        $this->getAuthCache()->setClient($client);
 
         return $this;
     }
@@ -886,24 +876,17 @@ class Configuration
      * @return $this
      */
     public function setToken($token) {
-        $this->getAuthCache()->setAccessToken($token->getAccessToken());
-        $this->getAuthCache()->setRefreshToken($this->getRefreshToken());
-        $this->getAuthCache()->setCreatedAt($token->getCreatedAt());
-        $this->getAuthCache()->setExpiresAt($token->getExpiresAt());
-        $now = strtotime('now');
-        $expirationTime = strtotime($token->getExpiresAt());
-        $expiresIn = max(($expirationTime - $now), 0);
-        $this->getAuthCache()->setExpiresIn($expiresIn);
+        $this->getAuthCache()->setToken($token);
 
         return $this;
     }
 
-    protected function getTokensApi()
+    public function getTokensApi()
     {
         return new TokensApi($this);
     }
 
-    protected function getClientsApi()
+    public function getClientsApi()
     {
         return new ClientsApi($this);
     }
