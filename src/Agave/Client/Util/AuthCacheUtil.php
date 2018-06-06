@@ -284,11 +284,13 @@ class AuthCacheUtil implements ModelInterface, ArrayAccess
                                     $data['consumer_key']: (isset($data['AGAVE_CLIENT_KEY']) ?
                                         $data['AGAVE_CLIENT_KEY'] : null)))))));
 
-        $this->container["baseUrl"] = isset($data['baseUrl']) ?
+        $baseUrl = isset($data['baseUrl']) ?
             $data['baseUrl'] : (isset($data['baseurl']) ?
                 $data['baseurl'] : (isset($data['base_url']) ?
                     $data['base_url'] : (isset($data['AGAVE_BASE_URL']) ?
                         $data['AGAVE_BASE_URL'] : null)));
+
+        $this->container["baseUrl"] = $baseUrl ? trim($baseUrl, '/') : null;
 
         $this->container["devUrl"] = isset($data['devUrl']) ?
             $data['devUrl'] : (isset($data['devurl']) ?
@@ -390,7 +392,7 @@ class AuthCacheUtil implements ModelInterface, ArrayAccess
      */
     public function setBaseUrl($baseUrl)
     {
-        $this->container['baseUrl'] = $baseUrl;
+        $this->container['baseUrl'] = $baseUrl ? trim($baseUrl, '/') : null;
     }
 
     /**
